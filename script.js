@@ -764,7 +764,7 @@ function initLazyLoading() {
 document.addEventListener('DOMContentLoaded', initLazyLoading);
 
 /* ============================================
-   3D AR Preview Feature - Perfect Realistic Effect
+   3D AR Preview Feature - Mobile Optimized
    ============================================ */
 function initARPreview() {
     const arModal = document.getElementById('arModal');
@@ -778,6 +778,27 @@ function initARPreview() {
     const arDepthSlider = document.getElementById('arDepthSlider');
     const arCaptureBtn = document.getElementById('arCaptureBtn');
     const arWhatsAppBtn = document.getElementById('arWhatsAppBtn');
+    
+    // Handle viewport resize (for mobile browser address bar)
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            if (arModal && arModal.classList.contains('active')) {
+                // Adjust modal height on resize
+                arModal.style.height = `${window.innerHeight}px`;
+            }
+        }, 100);
+    });
+    
+    // Handle visual viewport changes (keyboard appearing)
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            if (arModal && arModal.classList.contains('active')) {
+                arModal.style.height = `${window.visualViewport.height}px`;
+            }
+        });
+    }
     const arProductName = document.getElementById('arProductName');
     const arViewBtns = document.querySelectorAll('.ar-view-btn');
     const frameStyleBtns = document.querySelectorAll('.frame-style-btn');
@@ -819,6 +840,16 @@ function initARPreview() {
             arSizeSlider.value = 200;
             arDepthSlider.value = 15;
             arFrameImage.style.width = '200px';
+            
+            // Set mobile-optimized default size
+            if (window.innerWidth <= 480) {
+                arFrameImage.style.width = '130px';
+                arSizeSlider.value = 130;
+            } else if (window.innerWidth <= 768) {
+                arFrameImage.style.width = '160px';
+                arSizeSlider.value = 160;
+            }
+            
             updateFrame3DTransform();
             
             // Reset frame style
@@ -829,8 +860,20 @@ function initARPreview() {
             
             // Request device motion permission (iOS 13+)
             requestDeviceMotion();
+            
+            // Lock screen orientation if possible (mobile)
+            lockScreenOrientation();
         });
     });
+    
+    // Lock screen orientation for better AR experience
+    function lockScreenOrientation() {
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('portrait').catch(() => {
+                // Orientation lock not supported
+            });
+        }
+    }
     
     // Request device motion for 3D tilt effect
     async function requestDeviceMotion() {
@@ -850,7 +893,7 @@ function initARPreview() {
         }
     }
     
-    // Handle device orientation for realistic 3D effect
+    // Handle device orientation for PHOTOREALISTIC 3D effect
     function handleDeviceOrientation(e) {
         if (!arModal.classList.contains('active')) return;
         
@@ -858,28 +901,67 @@ function initARPreview() {
         const beta = e.beta || 0;  // -180 to 180
         const gamma = e.gamma || 0; // -90 to 90
         
-        // Normalize and limit tilt
-        tiltX = Math.max(-20, Math.min(20, gamma * 0.5));
-        tiltY = Math.max(-15, Math.min(15, (beta - 45) * 0.3));
+        // Smooth, realistic tilt with reduced sensitivity for mobile comfort
+        const sensitivity = window.innerWidth <= 480 ? 0.4 : 0.6;
+        const targetTiltX = Math.max(-20, Math.min(20, gamma * sensitivity));
+        const targetTiltY = Math.max(-15, Math.min(15, (beta - 45) * (sensitivity * 0.7)));
+        
+        // Smooth interpolation for realistic motion
+        tiltX += (targetTiltX - tiltX) * 0.12;
+        tiltY += (targetTiltY - tiltY) * 0.12;
         
         updateFrame3DTransform();
     }
     
-    // Update 3D frame transform
+    // Update 3D frame transform - MAXIMUM REALISTIC
     function updateFrame3DTransform() {
         if (arFrame3D) {
+            // Add subtle perspective shift based on tilt
+            const perspectiveShiftX = tiltX * 0.3;
+            const perspectiveShiftY = tiltY * 0.3;
+            
             arFrame3D.style.transform = `
+                perspective(2500px)
                 rotateX(${tiltY}deg) 
                 rotateY(${tiltX}deg) 
                 translateZ(${frameDepth}px)
+                translate3d(${perspectiveShiftX}px, ${perspectiveShiftY}px, 0)
             `;
             
-            // Update shadow based on tilt
-            const shadowX = -tiltX * 1.5;
-            const shadowY = 15 + tiltY;
+            // Update shadow dynamically for photorealistic lighting
+            const shadowX = -tiltX * 2;
+            const shadowY = 20 + tiltY * 1.5;
+            const shadowBlur = 25 + Math.abs(frameDepth);
+            const shadowOpacity = 0.85 - (Math.abs(tiltX) + Math.abs(tiltY)) * 0.008;
+            
             const wallShadow = document.querySelector('.ar-wall-shadow');
             if (wallShadow) {
-                wallShadow.style.transform = `translateX(${shadowX}px) translateY(${shadowY}px) translateZ(-30px)`;
+                wallShadow.style.transform = `
+                    translateX(${shadowX}px) 
+                    translateY(${shadowY}px) 
+                    translateZ(-${40 + frameDepth}px)
+                    skewX(${-tiltX * 0.3}deg)
+                    skewY(${-tiltY * 0.2}deg)
+                `;
+                wallShadow.style.filter = `blur(${shadowBlur}px)`;
+                wallShadow.style.opacity = shadowOpacity;
+            }
+            
+            // Update glass reflection based on angle
+            const glassReflection = document.querySelector('.ar-glass-reflection');
+            if (glassReflection) {
+                const reflectionAngle = 130 + tiltX * 0.5;
+                const reflectionOpacity = 0.8 + tiltX * 0.01;
+                glassReflection.style.background = `
+                    linear-gradient(${reflectionAngle}deg,
+                        rgba(255, 255, 255, ${0.35 + tiltX * 0.005}) 0%,
+                        rgba(255, 255, 255, 0.15) 20%,
+                        transparent 50%),
+                    linear-gradient(${310 + tiltY * 0.3}deg,
+                        transparent 60%,
+                        rgba(255, 255, 255, 0.05) 85%,
+                        rgba(255, 255, 255, 0.1) 100%)
+                `;
             }
         }
     }
@@ -909,18 +991,27 @@ function initARPreview() {
         }
     }
     
-    // Start Camera
+    // Start Camera - Optimized for mobile
     async function startCamera() {
         try {
+            // Try rear camera first, fallback to any camera
             const constraints = {
                 video: {
                     facingMode: { ideal: 'environment' },
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
+                    width: { ideal: 1920, min: 640 },
+                    height: { ideal: 1080, min: 480 }
                 }
             };
             
-            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (e) {
+                // Fallback to any camera
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: true
+                });
+            }
+            
             arVideo.srcObject = currentStream;
             arVideo.play();
         } catch (error) {
@@ -972,7 +1063,7 @@ function initARPreview() {
         }
     });
     
-    // Size Slider
+    // Size Slider - Smooth transition
     arSizeSlider.addEventListener('input', (e) => {
         const size = e.target.value;
         arFrameImage.style.width = `${size}px`;
@@ -983,14 +1074,21 @@ function initARPreview() {
         frameDepth = parseInt(e.target.value);
         updateFrame3DTransform();
         
-        // Update frame border width based on depth
+        // Update frame border width based on depth for 3D effect
         if (arFrameBorder) {
-            const padding = 10 + (frameDepth / 3);
+            const padding = 12 + (frameDepth / 2.5);
             arFrameBorder.style.padding = `${padding}px`;
+        }
+        
+        // Update mat padding
+        const frameMat = document.querySelector('.ar-frame-mat');
+        if (frameMat) {
+            const matPadding = 8 + (frameDepth / 4);
+            frameMat.style.padding = `${matPadding}px`;
         }
     });
     
-    // Mouse movement for 3D tilt effect (desktop)
+    // Mouse movement for 3D tilt effect (desktop) - Enhanced
     document.addEventListener('mousemove', (e) => {
         if (!arModal.classList.contains('active') || useDeviceMotion) return;
         
@@ -1001,13 +1099,17 @@ function initARPreview() {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
         
-        tiltX = ((mouseX - centerX) / centerX) * 10;
-        tiltY = ((mouseY - centerY) / centerY) * 8;
+        // Smooth, realistic tilt with easing
+        const targetTiltX = ((mouseX - centerX) / centerX) * 15;
+        const targetTiltY = ((mouseY - centerY) / centerY) * 12;
+        
+        tiltX += (targetTiltX - tiltX) * 0.12;
+        tiltY += (targetTiltY - tiltY) * 0.12;
         
         updateFrame3DTransform();
     });
     
-    // Drag functionality for frame
+    // Drag functionality for frame - Enhanced for mobile
     arFrameOverlay.addEventListener('mousedown', startDrag);
     arFrameOverlay.addEventListener('touchstart', startDrag, { passive: false });
     
