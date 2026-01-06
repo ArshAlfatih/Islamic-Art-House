@@ -764,25 +764,35 @@ function initLazyLoading() {
 document.addEventListener('DOMContentLoaded', initLazyLoading);
 
 /* ============================================
-   AR Preview Feature
+   3D AR Preview Feature - Perfect Realistic Effect
    ============================================ */
 function initARPreview() {
     const arModal = document.getElementById('arModal');
     const arCloseBtn = document.getElementById('arCloseBtn');
     const arVideo = document.getElementById('arVideo');
     const arFrameOverlay = document.getElementById('arFrameOverlay');
+    const arFrame3D = document.getElementById('arFrame3D');
     const arFrameImage = document.getElementById('arFrameImage');
+    const arFrameBorder = document.querySelector('.ar-frame-border');
     const arSizeSlider = document.getElementById('arSizeSlider');
+    const arDepthSlider = document.getElementById('arDepthSlider');
     const arCaptureBtn = document.getElementById('arCaptureBtn');
     const arWhatsAppBtn = document.getElementById('arWhatsAppBtn');
     const arProductName = document.getElementById('arProductName');
     const arViewBtns = document.querySelectorAll('.ar-view-btn');
+    const frameStyleBtns = document.querySelectorAll('.frame-style-btn');
     
     let currentStream = null;
     let currentProductName = '';
     let isDragging = false;
     let startX, startY, initialX, initialY;
     let frameX = 0, frameY = 0;
+    let currentFrameStyle = 'gold';
+    let frameDepth = 15;
+    
+    // Device motion for realistic 3D effect
+    let tiltX = 0, tiltY = 0;
+    let useDeviceMotion = false;
     
     // Open AR Modal
     arViewBtns.forEach(btn => {
@@ -799,22 +809,109 @@ function initARPreview() {
             arModal.classList.add('active');
             document.body.style.overflow = 'hidden';
             
-            // Reset frame position
+            // Reset frame position and settings
             frameX = 0;
             frameY = 0;
+            tiltX = 0;
+            tiltY = 0;
+            frameDepth = 15;
             arFrameOverlay.style.transform = 'translate(-50%, -50%)';
-            arSizeSlider.value = 150;
-            arFrameImage.style.width = '150px';
+            arSizeSlider.value = 200;
+            arDepthSlider.value = 15;
+            arFrameImage.style.width = '200px';
+            updateFrame3DTransform();
+            
+            // Reset frame style
+            setFrameStyle('gold');
             
             // Start camera
             await startCamera();
+            
+            // Request device motion permission (iOS 13+)
+            requestDeviceMotion();
         });
     });
+    
+    // Request device motion for 3D tilt effect
+    async function requestDeviceMotion() {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') {
+                    useDeviceMotion = true;
+                    window.addEventListener('deviceorientation', handleDeviceOrientation);
+                }
+            } catch (e) {
+                console.log('Device motion not available');
+            }
+        } else if (window.DeviceOrientationEvent) {
+            useDeviceMotion = true;
+            window.addEventListener('deviceorientation', handleDeviceOrientation);
+        }
+    }
+    
+    // Handle device orientation for realistic 3D effect
+    function handleDeviceOrientation(e) {
+        if (!arModal.classList.contains('active')) return;
+        
+        // Get device tilt (beta = front-back, gamma = left-right)
+        const beta = e.beta || 0;  // -180 to 180
+        const gamma = e.gamma || 0; // -90 to 90
+        
+        // Normalize and limit tilt
+        tiltX = Math.max(-20, Math.min(20, gamma * 0.5));
+        tiltY = Math.max(-15, Math.min(15, (beta - 45) * 0.3));
+        
+        updateFrame3DTransform();
+    }
+    
+    // Update 3D frame transform
+    function updateFrame3DTransform() {
+        if (arFrame3D) {
+            arFrame3D.style.transform = `
+                rotateX(${tiltY}deg) 
+                rotateY(${tiltX}deg) 
+                translateZ(${frameDepth}px)
+            `;
+            
+            // Update shadow based on tilt
+            const shadowX = -tiltX * 1.5;
+            const shadowY = 15 + tiltY;
+            const wallShadow = document.querySelector('.ar-wall-shadow');
+            if (wallShadow) {
+                wallShadow.style.transform = `translateX(${shadowX}px) translateY(${shadowY}px) translateZ(-30px)`;
+            }
+        }
+    }
+    
+    // Frame Style Selection
+    frameStyleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const style = btn.dataset.frame;
+            setFrameStyle(style);
+        });
+    });
+    
+    function setFrameStyle(style) {
+        currentFrameStyle = style;
+        
+        // Update active button
+        frameStyleBtns.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.frame === style) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Update frame border class
+        if (arFrameBorder) {
+            arFrameBorder.className = 'ar-frame-border frame-' + style;
+        }
+    }
     
     // Start Camera
     async function startCamera() {
         try {
-            // Try to use back camera first (for mobile)
             const constraints = {
                 video: {
                     facingMode: { ideal: 'environment' },
@@ -854,6 +951,9 @@ function initARPreview() {
             currentStream.getTracks().forEach(track => track.stop());
             currentStream = null;
         }
+        if (useDeviceMotion) {
+            window.removeEventListener('deviceorientation', handleDeviceOrientation);
+        }
     }
     
     // Close AR Modal
@@ -878,6 +978,35 @@ function initARPreview() {
         arFrameImage.style.width = `${size}px`;
     });
     
+    // Depth Slider for 3D effect
+    arDepthSlider.addEventListener('input', (e) => {
+        frameDepth = parseInt(e.target.value);
+        updateFrame3DTransform();
+        
+        // Update frame border width based on depth
+        if (arFrameBorder) {
+            const padding = 10 + (frameDepth / 3);
+            arFrameBorder.style.padding = `${padding}px`;
+        }
+    });
+    
+    // Mouse movement for 3D tilt effect (desktop)
+    document.addEventListener('mousemove', (e) => {
+        if (!arModal.classList.contains('active') || useDeviceMotion) return;
+        
+        const rect = arModal.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        tiltX = ((mouseX - centerX) / centerX) * 10;
+        tiltY = ((mouseY - centerY) / centerY) * 8;
+        
+        updateFrame3DTransform();
+    });
+    
     // Drag functionality for frame
     arFrameOverlay.addEventListener('mousedown', startDrag);
     arFrameOverlay.addEventListener('touchstart', startDrag, { passive: false });
@@ -889,6 +1018,8 @@ function initARPreview() {
     document.addEventListener('touchend', endDrag);
     
     function startDrag(e) {
+        if (e.target.closest('.ar-resize-handle')) return;
+        
         isDragging = true;
         arFrameOverlay.style.cursor = 'grabbing';
         
@@ -912,6 +1043,7 @@ function initARPreview() {
         let currentX, currentY;
         
         if (e.type === 'touchmove') {
+            if (e.touches.length !== 1) return;
             currentX = e.touches[0].clientX;
             currentY = e.touches[0].clientY;
         } else {
@@ -937,12 +1069,12 @@ function initARPreview() {
     
     // Pinch to zoom for mobile
     let initialPinchDistance = 0;
-    let initialFrameWidth = 150;
+    let initialFrameWidth = 200;
     
     arFrameOverlay.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             initialPinchDistance = getPinchDistance(e);
-            initialFrameWidth = parseInt(arFrameImage.style.width) || 150;
+            initialFrameWidth = parseInt(arFrameImage.style.width) || 200;
         }
     }, { passive: true });
     
@@ -952,7 +1084,7 @@ function initARPreview() {
             const currentDistance = getPinchDistance(e);
             const scale = currentDistance / initialPinchDistance;
             let newWidth = Math.round(initialFrameWidth * scale);
-            newWidth = Math.max(50, Math.min(300, newWidth));
+            newWidth = Math.max(80, Math.min(400, newWidth));
             arFrameImage.style.width = `${newWidth}px`;
             arSizeSlider.value = newWidth;
         }
@@ -965,66 +1097,115 @@ function initARPreview() {
         );
     }
     
-    // Capture Screenshot
+    // Capture Screenshot with 3D frame
     arCaptureBtn.addEventListener('click', () => {
         captureARScreenshot();
     });
     
     async function captureARScreenshot() {
         try {
+            // Use html2canvas approach for better 3D capture
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Set canvas size to video size
             canvas.width = arVideo.videoWidth || 1280;
             canvas.height = arVideo.videoHeight || 720;
             
             // Draw video frame
             ctx.drawImage(arVideo, 0, 0, canvas.width, canvas.height);
             
-            // Calculate frame position on canvas
+            // Calculate frame position
             const containerRect = document.querySelector('.ar-container').getBoundingClientRect();
             const frameRect = arFrameOverlay.getBoundingClientRect();
             
             const scaleX = canvas.width / containerRect.width;
             const scaleY = canvas.height / containerRect.height;
             
-            const frameWidth = parseInt(arFrameImage.style.width) || 150;
-            const frameHeight = arFrameImage.offsetHeight;
+            const frameWidth = parseInt(arFrameImage.style.width) || 200;
+            const frameHeight = arFrameImage.offsetHeight || 150;
+            const borderWidth = 15 + (frameDepth / 3);
+            const matWidth = 8;
+            
+            const totalWidth = frameWidth + (borderWidth + matWidth) * 2;
+            const totalHeight = frameHeight + (borderWidth + matWidth) * 2;
             
             const frameCanvasX = (frameRect.left - containerRect.left) * scaleX;
             const frameCanvasY = (frameRect.top - containerRect.top) * scaleY;
-            const frameCanvasWidth = frameWidth * scaleX;
-            const frameCanvasHeight = frameHeight * scaleY;
+            const frameCanvasWidth = totalWidth * scaleX;
+            const frameCanvasHeight = totalHeight * scaleY;
             
-            // Draw frame image
+            // Draw shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+            ctx.shadowBlur = 30 * scaleX;
+            ctx.shadowOffsetX = 10 * scaleX;
+            ctx.shadowOffsetY = 15 * scaleY;
+            
+            // Draw frame background based on style
+            const frameColors = {
+                gold: '#d4af37',
+                black: '#2a2a2a',
+                white: '#f5f5f5',
+                wood: '#8B4513',
+                silver: '#C0C0C0'
+            };
+            
+            ctx.fillStyle = frameColors[currentFrameStyle] || '#d4af37';
+            ctx.fillRect(frameCanvasX, frameCanvasY, frameCanvasWidth, frameCanvasHeight);
+            
+            // Reset shadow for inner elements
+            ctx.shadowColor = 'transparent';
+            
+            // Draw mat
+            const matX = frameCanvasX + borderWidth * scaleX;
+            const matY = frameCanvasY + borderWidth * scaleY;
+            const matW = frameCanvasWidth - borderWidth * 2 * scaleX;
+            const matH = frameCanvasHeight - borderWidth * 2 * scaleY;
+            
+            ctx.fillStyle = '#f5f5f0';
+            ctx.fillRect(matX, matY, matW, matH);
+            
+            // Draw artwork
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.src = arFrameImage.src;
             
             img.onload = () => {
-                // Draw white border
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-                ctx.lineWidth = 6 * scaleX;
-                ctx.strokeRect(frameCanvasX, frameCanvasY, frameCanvasWidth, frameCanvasHeight);
+                const artX = matX + matWidth * scaleX;
+                const artY = matY + matWidth * scaleY;
+                const artW = matW - matWidth * 2 * scaleX;
+                const artH = matH - matWidth * 2 * scaleY;
                 
-                // Draw image
-                ctx.drawImage(img, frameCanvasX, frameCanvasY, frameCanvasWidth, frameCanvasHeight);
+                ctx.drawImage(img, artX, artY, artW, artH);
+                
+                // Add glass reflection effect
+                const gradient = ctx.createLinearGradient(artX, artY, artX + artW, artY + artH);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+                gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.02)');
+                gradient.addColorStop(0.6, 'transparent');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(artX, artY, artW, artH);
                 
                 // Add watermark
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.font = `${14 * scaleX}px Poppins, sans-serif`;
-                ctx.fillText('Islamic Art House | islamicarthouse.com', 10, canvas.height - 15);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.font = `bold ${16 * scaleX}px Poppins, sans-serif`;
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 4;
+                ctx.fillText('✦ Islamic Art House', 15, canvas.height - 20);
                 
-                // Download image
+                // Download
                 const link = document.createElement('a');
                 link.download = `AR-Preview-${currentProductName.replace(/\s+/g, '-')}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = canvas.toDataURL('image/png', 0.95);
                 link.click();
                 
-                // Show success message
-                showNotification('Screenshot saved! 📸');
+                showNotification('📸 Screenshot saved successfully!');
             };
+            
+            img.onerror = () => {
+                showNotification('Could not capture. Please try again.');
+            };
+            
         } catch (error) {
             console.error('Screenshot error:', error);
             showNotification('Could not capture screenshot. Please try again.');
@@ -1036,7 +1217,7 @@ function initARPreview() {
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: fixed;
-            top: 100px;
+            top: 80px;
             left: 50%;
             transform: translateX(-50%);
             background: linear-gradient(135deg, #0f4c3a, #1a7a5e);
@@ -1045,8 +1226,9 @@ function initARPreview() {
             border-radius: 30px;
             font-size: 1rem;
             z-index: 10000;
-            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.4);
             animation: slideDown 0.3s ease;
+            border: 1px solid rgba(212, 175, 55, 0.3);
         `;
         notification.textContent = message;
         document.body.appendChild(notification);
