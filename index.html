@@ -888,26 +888,83 @@
         </div>
         <div class="ar-container">
             <video id="arVideo" autoplay playsinline></video>
+            
+            <!-- 3D Frame with realistic effects -->
             <div class="ar-frame-overlay" id="arFrameOverlay">
-                <img id="arFrameImage" src="" alt="AR Frame Preview" draggable="false">
+                <div class="ar-frame-3d" id="arFrame3D">
+                    <!-- Wall shadow (appears behind frame) -->
+                    <div class="ar-wall-shadow"></div>
+                    
+                    <!-- Main frame structure -->
+                    <div class="ar-frame-border">
+                        <!-- Frame edges for 3D depth -->
+                        <div class="frame-edge frame-edge-top"></div>
+                        <div class="frame-edge frame-edge-right"></div>
+                        <div class="frame-edge frame-edge-bottom"></div>
+                        <div class="frame-edge frame-edge-left"></div>
+                        
+                        <!-- Inner mat/mount -->
+                        <div class="ar-frame-mat">
+                            <!-- The actual artwork -->
+                            <img id="arFrameImage" src="" alt="AR Frame Preview" draggable="false">
+                        </div>
+                        
+                        <!-- Glass reflection effect -->
+                        <div class="ar-glass-reflection"></div>
+                    </div>
+                    
+                    <!-- Corner accents -->
+                    <div class="frame-corner-accent top-left"></div>
+                    <div class="frame-corner-accent top-right"></div>
+                    <div class="frame-corner-accent bottom-left"></div>
+                    <div class="frame-corner-accent bottom-right"></div>
+                </div>
+                
+                <!-- Resize handle -->
                 <div class="ar-resize-handle" id="arResizeHandle">
                     <i class="fas fa-expand-arrows-alt"></i>
                 </div>
             </div>
+            
+            <!-- Instructions -->
             <div class="ar-instructions">
-                <p><i class="fas fa-hand-pointer"></i> Drag to move • Pinch or use slider to resize</p>
+                <p><i class="fas fa-hand-pointer"></i> Drag to move • Pinch or slider to resize • Rotate for 3D effect</p>
+            </div>
+            
+            <!-- Frame style selector -->
+            <div class="ar-frame-styles" id="arFrameStyles">
+                <button class="frame-style-btn active" data-frame="gold" title="Gold Frame">
+                    <span style="background: linear-gradient(135deg, #d4af37, #f0d060);"></span>
+                </button>
+                <button class="frame-style-btn" data-frame="black" title="Black Frame">
+                    <span style="background: linear-gradient(135deg, #2a2a2a, #444);"></span>
+                </button>
+                <button class="frame-style-btn" data-frame="white" title="White Frame">
+                    <span style="background: linear-gradient(135deg, #fff, #e8e8e8);"></span>
+                </button>
+                <button class="frame-style-btn" data-frame="wood" title="Wood Frame">
+                    <span style="background: linear-gradient(135deg, #8B4513, #A0522D);"></span>
+                </button>
+                <button class="frame-style-btn" data-frame="silver" title="Silver Frame">
+                    <span style="background: linear-gradient(135deg, #C0C0C0, #E8E8E8);"></span>
+                </button>
             </div>
         </div>
+        
         <div class="ar-controls">
             <div class="ar-size-control">
-                <label for="arSizeSlider"><i class="fas fa-expand"></i> Frame Size</label>
-                <input type="range" id="arSizeSlider" min="50" max="300" value="150">
+                <label for="arSizeSlider"><i class="fas fa-expand"></i> Size</label>
+                <input type="range" id="arSizeSlider" min="80" max="400" value="200">
+            </div>
+            <div class="ar-depth-control">
+                <label for="arDepthSlider"><i class="fas fa-cube"></i> 3D Depth</label>
+                <input type="range" id="arDepthSlider" min="0" max="30" value="15">
             </div>
             <button class="ar-capture-btn" id="arCaptureBtn">
-                <i class="fas fa-camera"></i> Capture Screenshot
+                <i class="fas fa-camera"></i> Screenshot
             </button>
             <a id="arWhatsAppBtn" class="ar-whatsapp-btn" target="_blank" rel="noopener">
-                <i class="fab fa-whatsapp"></i> Order This Art
+                <i class="fab fa-whatsapp"></i> Order Now
             </a>
         </div>
     </div>
