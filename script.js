@@ -1,6 +1,6 @@
 /* ============================================
-   Islamic Art House & Hijab House - Main JavaScript
-   Handles: Navigation, Animations, Filters, Forms
+   Islamic Art House - Main JavaScript
+   Handles: Navigation, Animations, Filters, Forms, AR
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initContactForm();
     initSmoothScroll();
     initReviewSystem();
+    initARPreview();
 });
 
 /* ============================================
@@ -658,7 +659,7 @@ function initReviewSystem() {
             {
                 id: 3,
                 name: "Fatima Begum",
-                text: "Great collection of hijabs and Islamic art. The wooden frames are beautifully crafted. Fast delivery!",
+                text: "Great collection of Islamic art. The wooden frames are beautifully crafted. Fast delivery!",
                 rating: 5,
                 date: "Dec 15, 2025"
             },
@@ -672,7 +673,7 @@ function initReviewSystem() {
             {
                 id: 5,
                 name: "Zainab Patel",
-                text: "Premium quality hijabs and wonderful customer service. WhatsApp support is very responsive!",
+                text: "Premium quality art pieces and wonderful customer service. WhatsApp support is very responsive!",
                 rating: 5,
                 date: "Dec 5, 2025"
             }
@@ -763,8 +764,303 @@ function initLazyLoading() {
 document.addEventListener('DOMContentLoaded', initLazyLoading);
 
 /* ============================================
+   AR Preview Feature
+   ============================================ */
+function initARPreview() {
+    const arModal = document.getElementById('arModal');
+    const arCloseBtn = document.getElementById('arCloseBtn');
+    const arVideo = document.getElementById('arVideo');
+    const arFrameOverlay = document.getElementById('arFrameOverlay');
+    const arFrameImage = document.getElementById('arFrameImage');
+    const arSizeSlider = document.getElementById('arSizeSlider');
+    const arCaptureBtn = document.getElementById('arCaptureBtn');
+    const arWhatsAppBtn = document.getElementById('arWhatsAppBtn');
+    const arProductName = document.getElementById('arProductName');
+    const arViewBtns = document.querySelectorAll('.ar-view-btn');
+    
+    let currentStream = null;
+    let currentProductName = '';
+    let isDragging = false;
+    let startX, startY, initialX, initialY;
+    let frameX = 0, frameY = 0;
+    
+    // Open AR Modal
+    arViewBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const imageSrc = btn.dataset.image;
+            const productName = btn.dataset.name;
+            currentProductName = productName;
+            
+            arProductName.textContent = `View "${productName}" on Your Wall`;
+            arFrameImage.src = imageSrc;
+            arWhatsAppBtn.href = `https://wa.me/917041337960?text=Assalamu%20Alaikum!%20I%20used%20AR%20preview%20for%20*${encodeURIComponent(productName)}*%20and%20I'm%20interested%20in%20ordering%20it.%20Please%20share%20price%20and%20details.`;
+            
+            arModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Reset frame position
+            frameX = 0;
+            frameY = 0;
+            arFrameOverlay.style.transform = 'translate(-50%, -50%)';
+            arSizeSlider.value = 150;
+            arFrameImage.style.width = '150px';
+            
+            // Start camera
+            await startCamera();
+        });
+    });
+    
+    // Start Camera
+    async function startCamera() {
+        try {
+            // Try to use back camera first (for mobile)
+            const constraints = {
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            };
+            
+            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+            arVideo.srcObject = currentStream;
+            arVideo.play();
+        } catch (error) {
+            console.error('Camera error:', error);
+            showARError();
+        }
+    }
+    
+    // Show error if camera not available
+    function showARError() {
+        const arContainer = document.querySelector('.ar-container');
+        arContainer.innerHTML = `
+            <div class="ar-error">
+                <i class="fas fa-video-slash"></i>
+                <h4>Camera Access Required</h4>
+                <p>Please allow camera access to use the AR preview feature. 
+                   Make sure you're using HTTPS and have granted camera permissions.</p>
+                <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 15px;">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+            </div>
+        `;
+    }
+    
+    // Stop Camera
+    function stopCamera() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            currentStream = null;
+        }
+    }
+    
+    // Close AR Modal
+    arCloseBtn.addEventListener('click', () => {
+        arModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        stopCamera();
+    });
+    
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && arModal.classList.contains('active')) {
+            arModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            stopCamera();
+        }
+    });
+    
+    // Size Slider
+    arSizeSlider.addEventListener('input', (e) => {
+        const size = e.target.value;
+        arFrameImage.style.width = `${size}px`;
+    });
+    
+    // Drag functionality for frame
+    arFrameOverlay.addEventListener('mousedown', startDrag);
+    arFrameOverlay.addEventListener('touchstart', startDrag, { passive: false });
+    
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('touchmove', drag, { passive: false });
+    
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+    
+    function startDrag(e) {
+        isDragging = true;
+        arFrameOverlay.style.cursor = 'grabbing';
+        
+        if (e.type === 'touchstart') {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        } else {
+            startX = e.clientX;
+            startY = e.clientY;
+        }
+        
+        initialX = frameX;
+        initialY = frameY;
+        
+        e.preventDefault();
+    }
+    
+    function drag(e) {
+        if (!isDragging) return;
+        
+        let currentX, currentY;
+        
+        if (e.type === 'touchmove') {
+            currentX = e.touches[0].clientX;
+            currentY = e.touches[0].clientY;
+        } else {
+            currentX = e.clientX;
+            currentY = e.clientY;
+        }
+        
+        const deltaX = currentX - startX;
+        const deltaY = currentY - startY;
+        
+        frameX = initialX + deltaX;
+        frameY = initialY + deltaY;
+        
+        arFrameOverlay.style.transform = `translate(calc(-50% + ${frameX}px), calc(-50% + ${frameY}px))`;
+        
+        e.preventDefault();
+    }
+    
+    function endDrag() {
+        isDragging = false;
+        arFrameOverlay.style.cursor = 'move';
+    }
+    
+    // Pinch to zoom for mobile
+    let initialPinchDistance = 0;
+    let initialFrameWidth = 150;
+    
+    arFrameOverlay.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            initialPinchDistance = getPinchDistance(e);
+            initialFrameWidth = parseInt(arFrameImage.style.width) || 150;
+        }
+    }, { passive: true });
+    
+    arFrameOverlay.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const currentDistance = getPinchDistance(e);
+            const scale = currentDistance / initialPinchDistance;
+            let newWidth = Math.round(initialFrameWidth * scale);
+            newWidth = Math.max(50, Math.min(300, newWidth));
+            arFrameImage.style.width = `${newWidth}px`;
+            arSizeSlider.value = newWidth;
+        }
+    }, { passive: false });
+    
+    function getPinchDistance(e) {
+        return Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+    }
+    
+    // Capture Screenshot
+    arCaptureBtn.addEventListener('click', () => {
+        captureARScreenshot();
+    });
+    
+    async function captureARScreenshot() {
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size to video size
+            canvas.width = arVideo.videoWidth || 1280;
+            canvas.height = arVideo.videoHeight || 720;
+            
+            // Draw video frame
+            ctx.drawImage(arVideo, 0, 0, canvas.width, canvas.height);
+            
+            // Calculate frame position on canvas
+            const containerRect = document.querySelector('.ar-container').getBoundingClientRect();
+            const frameRect = arFrameOverlay.getBoundingClientRect();
+            
+            const scaleX = canvas.width / containerRect.width;
+            const scaleY = canvas.height / containerRect.height;
+            
+            const frameWidth = parseInt(arFrameImage.style.width) || 150;
+            const frameHeight = arFrameImage.offsetHeight;
+            
+            const frameCanvasX = (frameRect.left - containerRect.left) * scaleX;
+            const frameCanvasY = (frameRect.top - containerRect.top) * scaleY;
+            const frameCanvasWidth = frameWidth * scaleX;
+            const frameCanvasHeight = frameHeight * scaleY;
+            
+            // Draw frame image
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.src = arFrameImage.src;
+            
+            img.onload = () => {
+                // Draw white border
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.lineWidth = 6 * scaleX;
+                ctx.strokeRect(frameCanvasX, frameCanvasY, frameCanvasWidth, frameCanvasHeight);
+                
+                // Draw image
+                ctx.drawImage(img, frameCanvasX, frameCanvasY, frameCanvasWidth, frameCanvasHeight);
+                
+                // Add watermark
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = `${14 * scaleX}px Poppins, sans-serif`;
+                ctx.fillText('Islamic Art House | islamicarthouse.com', 10, canvas.height - 15);
+                
+                // Download image
+                const link = document.createElement('a');
+                link.download = `AR-Preview-${currentProductName.replace(/\s+/g, '-')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Show success message
+                showNotification('Screenshot saved! 📸');
+            };
+        } catch (error) {
+            console.error('Screenshot error:', error);
+            showNotification('Could not capture screenshot. Please try again.');
+        }
+    }
+    
+    // Show notification
+    function showNotification(message) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #0f4c3a, #1a7a5e);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 1rem;
+            z-index: 10000;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s ease;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideUp 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }, 2500);
+    }
+}
+
+/* ============================================
    Console Welcome Message
    ============================================ */
-console.log('%c☪ Islamic Art House & Hijab House', 'color: #1a5f4a; font-size: 24px; font-weight: bold;');
-console.log('%cBringing Islamic Elegance to Your Home & Wardrobe', 'color: #c9a227; font-size: 14px;');
+console.log('%c☪ Islamic Art House', 'color: #1a5f4a; font-size: 24px; font-weight: bold;');
+console.log('%cBringing Islamic Elegance to Your Home', 'color: #c9a227; font-size: 14px;');
 console.log('%cContact: +91 7041337960 | vohramuhammad89@gmail.com', 'color: #666; font-size: 12px;');
