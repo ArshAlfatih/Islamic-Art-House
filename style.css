@@ -3001,7 +3001,7 @@ input, textarea, select {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.97);
+    background: rgba(0, 0, 0, 0.98);
     z-index: 9999;
     display: none;
     flex-direction: column;
@@ -3009,27 +3009,34 @@ input, textarea, select {
 
 .ar-modal.active {
     display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .ar-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
+    padding: 12px 20px;
     background: linear-gradient(135deg, var(--primary-green-dark), var(--primary-green));
     color: var(--white);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
 }
 
 .ar-modal-header h3 {
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
 .ar-modal-header h3::before {
-    content: '📐';
+    content: '🖼️';
 }
 
 .ar-close-btn {
@@ -3072,7 +3079,9 @@ input, textarea, select {
     object-fit: cover;
 }
 
-/* AR Frame Overlay */
+/* ============================================
+   3D Frame Overlay - Realistic Frame Effect
+   ============================================ */
 .ar-frame-overlay {
     position: absolute;
     top: 50%;
@@ -3082,35 +3091,254 @@ input, textarea, select {
     z-index: 10;
     touch-action: none;
     user-select: none;
+    perspective: 1000px;
 }
 
+.ar-frame-3d {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease;
+}
+
+/* Wall Shadow - Creates depth illusion */
+.ar-wall-shadow {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: -15px;
+    bottom: -15px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 50%, transparent 70%);
+    filter: blur(15px);
+    transform: translateZ(-30px);
+    z-index: -1;
+}
+
+/* Main Frame Border */
+.ar-frame-border {
+    position: relative;
+    padding: 15px;
+    background: linear-gradient(145deg, #d4af37 0%, #f0d060 15%, #d4af37 30%, #b8960c 50%, #d4af37 70%, #f0d060 85%, #d4af37 100%);
+    border-radius: 3px;
+    box-shadow: 
+        0 0 0 1px rgba(0,0,0,0.3),
+        inset 0 0 0 1px rgba(255,255,255,0.3),
+        0 25px 50px -12px rgba(0, 0, 0, 0.6),
+        0 12px 24px -8px rgba(0, 0, 0, 0.4);
+    transform-style: preserve-3d;
+}
+
+/* Frame color variations */
+.ar-frame-border.frame-gold {
+    background: linear-gradient(145deg, #d4af37 0%, #f0d060 15%, #d4af37 30%, #b8960c 50%, #d4af37 70%, #f0d060 85%, #d4af37 100%);
+}
+
+.ar-frame-border.frame-black {
+    background: linear-gradient(145deg, #3a3a3a 0%, #4a4a4a 15%, #2a2a2a 30%, #1a1a1a 50%, #3a3a3a 70%, #4a4a4a 85%, #2a2a2a 100%);
+}
+
+.ar-frame-border.frame-white {
+    background: linear-gradient(145deg, #ffffff 0%, #f8f8f8 15%, #eeeeee 30%, #e0e0e0 50%, #f5f5f5 70%, #ffffff 85%, #f0f0f0 100%);
+}
+
+.ar-frame-border.frame-wood {
+    background: linear-gradient(145deg, #8B4513 0%, #A0522D 15%, #8B4513 30%, #654321 50%, #8B4513 70%, #A0522D 85%, #8B4513 100%);
+}
+
+.ar-frame-border.frame-silver {
+    background: linear-gradient(145deg, #C0C0C0 0%, #E8E8E8 15%, #D0D0D0 30%, #A8A8A8 50%, #C8C8C8 70%, #E0E0E0 85%, #C0C0C0 100%);
+}
+
+/* 3D Frame Edges */
+.frame-edge {
+    position: absolute;
+    background: linear-gradient(145deg, #b8960c, #8a6f08);
+}
+
+.frame-edge-top {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 15px;
+    transform: rotateX(-45deg);
+    transform-origin: top;
+    background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(0,0,0,0.2) 100%);
+}
+
+.frame-edge-bottom {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 15px;
+    transform: rotateX(45deg);
+    transform-origin: bottom;
+    background: linear-gradient(0deg, rgba(0,0,0,0.4) 0%, rgba(255,255,255,0.1) 100%);
+}
+
+.frame-edge-left {
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 15px;
+    transform: rotateY(45deg);
+    transform-origin: left;
+    background: linear-gradient(90deg, rgba(0,0,0,0.3) 0%, rgba(255,255,255,0.2) 100%);
+}
+
+.frame-edge-right {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 15px;
+    transform: rotateY(-45deg);
+    transform-origin: right;
+    background: linear-gradient(-90deg, rgba(0,0,0,0.4) 0%, rgba(255,255,255,0.1) 100%);
+}
+
+/* Inner Mat/Mount */
+.ar-frame-mat {
+    position: relative;
+    padding: 8px;
+    background: linear-gradient(145deg, #f5f5f0 0%, #e8e8e3 100%);
+    box-shadow: 
+        inset 0 0 10px rgba(0,0,0,0.15),
+        inset 0 0 3px rgba(0,0,0,0.1);
+}
+
+/* The Artwork Image */
 #arFrameImage {
-    width: 150px;
+    width: 200px;
     height: auto;
-    border: 4px solid rgba(255, 255, 255, 0.8);
-    border-radius: 4px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 
-                0 0 0 1px rgba(212, 175, 55, 0.5),
-                inset 0 0 20px rgba(0, 0, 0, 0.1);
+    display: block;
+    box-shadow: 
+        0 2px 8px rgba(0,0,0,0.3),
+        inset 0 0 0 1px rgba(0,0,0,0.1);
     pointer-events: none;
-    transition: width 0.1s ease;
+    transition: width 0.15s ease;
 }
 
+/* Glass Reflection Effect */
+.ar-glass-reflection {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    bottom: 15px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.05) 40%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.08) 100%
+    );
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Corner Accents */
+.frame-corner-accent {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 215, 0, 0.6);
+    z-index: 6;
+}
+
+.frame-corner-accent.top-left {
+    top: -3px;
+    left: -3px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.frame-corner-accent.top-right {
+    top: -3px;
+    right: -3px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.frame-corner-accent.bottom-left {
+    bottom: -3px;
+    left: -3px;
+    border-right: none;
+    border-top: none;
+}
+
+.frame-corner-accent.bottom-right {
+    bottom: -3px;
+    right: -3px;
+    border-left: none;
+    border-top: none;
+}
+
+/* Frame Style Selector */
+.ar-frame-styles {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 10px;
+    border-radius: 30px;
+    backdrop-filter: blur(10px);
+}
+
+.frame-style-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.frame-style-btn span {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: block;
+}
+
+.frame-style-btn:hover {
+    transform: scale(1.15);
+}
+
+.frame-style-btn.active {
+    border-color: var(--primary-gold);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+
+/* Resize Handle */
 .ar-resize-handle {
     position: absolute;
-    bottom: -15px;
-    right: -15px;
-    width: 30px;
-    height: 30px;
-    background: var(--primary-gold);
+    bottom: -20px;
+    right: -20px;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-light));
     border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--white);
-    font-size: 0.7rem;
+    font-size: 0.85rem;
     cursor: se-resize;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    z-index: 25;
+    transition: transform 0.2s ease;
+}
+
+.ar-resize-handle:hover {
+    transform: scale(1.1);
 }
 
 /* AR Instructions */
@@ -3119,54 +3347,61 @@ input, textarea, select {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.75);
     color: var(--white);
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 30px;
     font-size: 0.85rem;
     backdrop-filter: blur(10px);
     z-index: 15;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ar-instructions i {
     color: var(--primary-gold);
-    margin-right: 5px;
+    margin-right: 8px;
 }
 
 /* AR Controls */
 .ar-controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
-    padding: 20px;
+    gap: 12px;
+    padding: 15px 20px;
     background: linear-gradient(135deg, var(--primary-green-dark), var(--primary-green));
     align-items: center;
     justify-content: center;
+    border-top: 1px solid rgba(212, 175, 55, 0.3);
 }
 
-.ar-size-control {
+.ar-size-control,
+.ar-depth-control {
     display: flex;
     align-items: center;
     gap: 10px;
     background: rgba(255, 255, 255, 0.1);
-    padding: 10px 20px;
-    border-radius: 30px;
+    padding: 8px 16px;
+    border-radius: 25px;
 }
 
-.ar-size-control label {
+.ar-size-control label,
+.ar-depth-control label {
     color: var(--white);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    white-space: nowrap;
 }
 
-.ar-size-control label i {
+.ar-size-control label i,
+.ar-depth-control label i {
     color: var(--primary-gold);
 }
 
-#arSizeSlider {
-    width: 120px;
+#arSizeSlider,
+#arDepthSlider {
+    width: 100px;
     height: 6px;
     -webkit-appearance: none;
     appearance: none;
@@ -3176,20 +3411,22 @@ input, textarea, select {
     cursor: pointer;
 }
 
-#arSizeSlider::-webkit-slider-thumb {
+#arSizeSlider::-webkit-slider-thumb,
+#arDepthSlider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: var(--primary-gold);
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5);
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.5);
 }
 
-#arSizeSlider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+#arSizeSlider::-moz-range-thumb,
+#arDepthSlider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: var(--primary-gold);
     cursor: pointer;
@@ -3200,12 +3437,12 @@ input, textarea, select {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
-    background: rgba(255, 255, 255, 0.2);
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.15);
     color: var(--white);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 30px;
-    font-size: 0.95rem;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 25px;
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -3214,21 +3451,22 @@ input, textarea, select {
 .ar-capture-btn:hover {
     background: var(--white);
     color: var(--primary-green-dark);
+    transform: scale(1.05);
 }
 
 .ar-capture-btn i {
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .ar-whatsapp-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 24px;
+    padding: 10px 20px;
     background: #25D366;
     color: var(--white);
-    border-radius: 30px;
-    font-size: 0.95rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -3242,7 +3480,7 @@ input, textarea, select {
 }
 
 .ar-whatsapp-btn i {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
 /* AR Error State */
