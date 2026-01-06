@@ -3116,22 +3116,28 @@ input, textarea, select {
     opacity: 1;
 }
 
-/* AR Modal */
+/* AR Modal - Full Screen with Dynamic Viewport */
 .ar-modal {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport for mobile browsers */
     background: rgba(0, 0, 0, 0.98);
     z-index: 9999;
     display: none;
     flex-direction: column;
+    overflow: hidden;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior: contain;
+    /* iOS Safari full screen */
+    -webkit-touch-callout: none;
 }
 
 .ar-modal.active {
     display: flex;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.25s ease;
 }
 
 @keyframes fadeIn {
@@ -3147,6 +3153,11 @@ input, textarea, select {
     background: linear-gradient(135deg, var(--primary-green-dark), var(--primary-green));
     color: var(--white);
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+    /* Prevent text selection on mobile */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Safe area for notched phones */
+    padding-top: max(12px, env(safe-area-inset-top));
 }
 
 .ar-modal-header h3 {
@@ -3164,6 +3175,8 @@ input, textarea, select {
 .ar-close-btn {
     width: 40px;
     height: 40px;
+    min-width: 44px; /* iOS touch target */
+    min-height: 44px;
     border-radius: var(--radius-full);
     background: rgba(255, 255, 255, 0.15);
     color: var(--white);
@@ -3172,8 +3185,15 @@ input, textarea, select {
     justify-content: center;
     font-size: 1.2rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     border: none;
+    /* Touch feedback */
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3);
+}
+
+.ar-close-btn:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .ar-close-btn:hover {
@@ -3181,7 +3201,7 @@ input, textarea, select {
     transform: rotate(90deg);
 }
 
-/* AR Container */
+/* AR Container - Full Screen */
 .ar-container {
     flex: 1;
     position: relative;
@@ -3190,6 +3210,9 @@ input, textarea, select {
     align-items: center;
     justify-content: center;
     background: #000;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
 }
 
 #arVideo {
@@ -3198,11 +3221,12 @@ input, textarea, select {
     left: 0;
     width: 100%;
     height: 100%;
+    transform: scaleX(-1);
     object-fit: cover;
 }
 
 /* ============================================
-   3D Frame Overlay - MAXIMUM REALISTIC Frame Effect
+   3D Frame Overlay - MAXIMUM PHOTOREALISTIC Frame Effect
    ============================================ */
 .ar-frame-overlay {
     position: absolute;
@@ -3213,133 +3237,197 @@ input, textarea, select {
     z-index: 10;
     touch-action: none;
     user-select: none;
-    perspective: 1200px;
+    perspective: 2500px;
+    perspective-origin: center center;
 }
 
 .ar-frame-3d {
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.15s ease-out;
+    transition: transform 0.05s linear;
+    will-change: transform;
+    animation: gentleFloat 8s ease-in-out infinite;
 }
 
-/* Wall Shadow - Ultra Realistic depth illusion */
+@keyframes gentleFloat {
+    0%, 100% { transform: translateY(0px) rotateX(0deg) rotateY(0deg); }
+    25% { transform: translateY(-2px) rotateX(0.3deg) rotateY(-0.2deg); }
+    50% { transform: translateY(-4px) rotateX(0deg) rotateY(0deg); }
+    75% { transform: translateY(-2px) rotateX(-0.3deg) rotateY(0.2deg); }
+}
+
+/* Wall Shadow - PHOTOREALISTIC multi-layer depth */
 .ar-wall-shadow {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    right: -25px;
-    bottom: -25px;
-    background: radial-gradient(ellipse at 30% 30%, 
-        rgba(0,0,0,0.65) 0%, 
-        rgba(0,0,0,0.4) 30%, 
-        rgba(0,0,0,0.15) 60%, 
-        transparent 80%);
-    filter: blur(20px);
-    transform: translateZ(-40px) skewX(-3deg) skewY(-2deg);
+    top: 35px;
+    left: 35px;
+    right: -45px;
+    bottom: -45px;
+    background: 
+        /* Primary contact shadow - dark core */
+        radial-gradient(ellipse at 15% 15%, 
+            rgba(0,0,0,0.85) 0%, 
+            rgba(0,0,0,0.55) 20%, 
+            rgba(0,0,0,0.3) 45%, 
+            transparent 70%),
+        /* Soft ambient occlusion */
+        radial-gradient(ellipse at 50% 50%,
+            rgba(0,0,0,0.4) 0%,
+            rgba(0,0,0,0.2) 35%,
+            transparent 60%);
+    filter: blur(30px);
+    transform: translateZ(-80px) rotateX(8deg) skewX(-6deg) skewY(-5deg);
     z-index: -1;
-    opacity: 0.9;
-    transition: all 0.15s ease-out;
+    opacity: 1;
+    transition: all 0.05s linear;
 }
 
-/* Hanging wire effect */
+/* Hanging wire - Super realistic with thickness variation */
 .ar-frame-3d::before {
     content: '';
     position: absolute;
-    top: -30px;
+    top: -50px;
     left: 50%;
     transform: translateX(-50%);
-    width: 2px;
-    height: 30px;
+    width: 1px;
+    height: 50px;
     background: linear-gradient(180deg, 
         transparent 0%, 
-        rgba(100, 100, 100, 0.6) 20%,
-        rgba(80, 80, 80, 0.8) 100%);
+        rgba(120, 120, 120, 0.2) 3%,
+        rgba(80, 80, 80, 0.5) 20%,
+        rgba(60, 60, 60, 0.8) 60%,
+        rgba(40, 40, 40, 0.95) 100%);
     z-index: -1;
+    box-shadow: 
+        1px 0 2px rgba(0,0,0,0.4),
+        -0.5px 0 0.5px rgba(255,255,255,0.15);
 }
 
-/* Hanging nail shadow */
+/* Hanging nail/hook - Premium metallic finish */
 .ar-frame-3d::after {
     content: '';
     position: absolute;
-    top: -35px;
+    top: -58px;
     left: 50%;
     transform: translateX(-50%);
-    width: 8px;
-    height: 8px;
-    background: radial-gradient(circle, rgba(60,60,60,0.8) 0%, transparent 70%);
+    width: 16px;
+    height: 16px;
+    background: 
+        radial-gradient(circle at 30% 30%, 
+            rgba(220,220,220,1) 0%,
+            rgba(160,160,160,0.95) 25%, 
+            rgba(100,100,100,0.95) 55%, 
+            rgba(60,60,60,0.9) 100%);
     border-radius: 50%;
     z-index: -1;
+    box-shadow: 
+        4px 5px 12px rgba(0,0,0,0.65),
+        2px 3px 5px rgba(0,0,0,0.45),
+        inset -3px -3px 6px rgba(0,0,0,0.5),
+        inset 3px 3px 6px rgba(255,255,255,0.4);
 }
 
-/* Main Frame Border - Ultra Realistic */
+/* Main Frame Border - PHOTOREALISTIC Premium Frame */
 .ar-frame-border {
     position: relative;
-    padding: 18px;
+    padding: 22px;
     background: linear-gradient(145deg, 
         #d4af37 0%, 
-        #f0d060 8%, 
+        #f5e080 5%,
+        #e8c84a 12%, 
         #d4af37 20%, 
         #c9a430 35%,
         #b8960c 50%, 
         #c9a430 65%,
         #d4af37 80%, 
-        #f0d060 92%, 
+        #e8c84a 88%,
+        #f5e080 95%, 
         #d4af37 100%);
-    border-radius: 2px;
+    border-radius: 3px;
     box-shadow: 
-        /* Outer edge highlight */
-        0 0 0 1px rgba(255,255,255,0.2),
-        /* Inner edge shadow */
-        inset 0 0 0 1px rgba(0,0,0,0.15),
-        inset 2px 2px 4px rgba(255,255,255,0.3),
-        inset -2px -2px 4px rgba(0,0,0,0.2),
-        /* Main drop shadow */
-        0 30px 60px -15px rgba(0, 0, 0, 0.5),
+        /* Outer metallic edge highlight */
+        0 0 0 1px rgba(255,255,255,0.35),
+        0 0 0 2px rgba(0,0,0,0.1),
+        /* Inner edge lighting */
+        inset 0 0 0 1px rgba(0,0,0,0.2),
+        inset 3px 3px 6px rgba(255,255,255,0.4),
+        inset -3px -3px 6px rgba(0,0,0,0.25),
+        /* Deep layered shadow */
+        0 40px 80px -20px rgba(0, 0, 0, 0.6),
+        0 25px 50px -15px rgba(0, 0, 0, 0.5),
         0 15px 30px -10px rgba(0, 0, 0, 0.4),
-        /* Ambient shadow */
-        0 5px 15px rgba(0, 0, 0, 0.2);
+        /* Soft ambient glow */
+        0 8px 20px rgba(0, 0, 0, 0.25);
     transform-style: preserve-3d;
 }
 
-/* Frame color variations - Ultra Realistic */
+/* Frame color variations - Maximum Realism with texture */
 .ar-frame-border.frame-gold {
-    background: linear-gradient(145deg, 
-        #d4af37 0%, #f0d060 8%, #d4af37 20%, #c9a430 35%,
-        #b8960c 50%, #c9a430 65%, #d4af37 80%, #f0d060 92%, #d4af37 100%);
+    background: 
+        linear-gradient(145deg, 
+            #d4af37 0%, #f5e080 5%, #e8c84a 12%, #d4af37 20%, #c9a430 35%,
+            #b8960c 50%, #c9a430 65%, #d4af37 80%, #e8c84a 88%, #f5e080 95%, #d4af37 100%);
 }
 
 .ar-frame-border.frame-black {
-    background: linear-gradient(145deg, 
-        #2a2a2a 0%, #404040 8%, #2a2a2a 20%, #1a1a1a 35%,
-        #0f0f0f 50%, #1a1a1a 65%, #2a2a2a 80%, #404040 92%, #2a2a2a 100%);
+    background: 
+        linear-gradient(145deg, 
+            #3a3a3a 0%, #505050 5%, #3a3a3a 12%, #2a2a2a 20%, #1a1a1a 35%,
+            #0a0a0a 50%, #1a1a1a 65%, #2a2a2a 80%, #3a3a3a 88%, #454545 95%, #2a2a2a 100%);
+    box-shadow: 
+        0 0 0 1px rgba(255,255,255,0.1),
+        0 0 0 2px rgba(0,0,0,0.3),
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        inset 2px 2px 4px rgba(255,255,255,0.08),
+        inset -2px -2px 4px rgba(0,0,0,0.4),
+        0 40px 80px -20px rgba(0, 0, 0, 0.7),
+        0 25px 50px -15px rgba(0, 0, 0, 0.6),
+        0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .ar-frame-border.frame-white {
-    background: linear-gradient(145deg, 
-        #ffffff 0%, #f8f8f8 8%, #f0f0f0 20%, #e8e8e8 35%,
-        #e0e0e0 50%, #e8e8e8 65%, #f0f0f0 80%, #f8f8f8 92%, #ffffff 100%);
+    background: 
+        linear-gradient(145deg, 
+            #ffffff 0%, #fafafa 5%, #f5f5f5 12%, #f0f0f0 20%, #e8e8e8 35%,
+            #e0e0e0 50%, #e8e8e8 65%, #f0f0f0 80%, #f5f5f5 88%, #fafafa 95%, #ffffff 100%);
+    box-shadow: 
+        0 0 0 1px rgba(0,0,0,0.08),
+        0 0 0 2px rgba(0,0,0,0.03),
+        inset 0 0 0 1px rgba(0,0,0,0.05),
+        inset 2px 2px 4px rgba(255,255,255,0.9),
+        inset -2px -2px 4px rgba(0,0,0,0.08),
+        0 40px 80px -20px rgba(0, 0, 0, 0.35),
+        0 25px 50px -15px rgba(0, 0, 0, 0.25),
+        0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .ar-frame-border.frame-wood {
-    background: linear-gradient(145deg, 
-        #8B4513 0%, #A0522D 8%, #8B4513 20%, #7a3c10 35%,
-        #654321 50%, #7a3c10 65%, #8B4513 80%, #A0522D 92%, #8B4513 100%);
-    background-image: 
+    background: 
         linear-gradient(145deg, 
-            #8B4513 0%, #A0522D 8%, #8B4513 20%, #7a3c10 35%,
-            #654321 50%, #7a3c10 65%, #8B4513 80%, #A0522D 92%, #8B4513 100%),
+            #9B5523 0%, #B06528 5%, #9B5523 12%, #8B4513 20%, #7a3c10 35%,
+            #654321 50%, #7a3c10 65%, #8B4513 80%, #9B5523 88%, #A56830 95%, #8B4513 100%),
         repeating-linear-gradient(90deg, 
-            transparent, transparent 2px, 
-            rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+            transparent 0px, transparent 3px, 
+            rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 5px);
 }
 
 .ar-frame-border.frame-silver {
-    background: linear-gradient(145deg, 
-        #D0D0D0 0%, #E8E8E8 8%, #C8C8C8 20%, #B8B8B8 35%,
-        #A8A8A8 50%, #B8B8B8 65%, #C8C8C8 80%, #E8E8E8 92%, #D0D0D0 100%);
+    background: 
+        linear-gradient(145deg, 
+            #E0E0E0 0%, #F0F0F0 5%, #E0E0E0 12%, #D0D0D0 20%, #C0C0C0 35%,
+            #A8A8A8 50%, #C0C0C0 65%, #D0D0D0 80%, #E0E0E0 88%, #F0F0F0 95%, #D0D0D0 100%);
+    box-shadow: 
+        0 0 0 1px rgba(255,255,255,0.5),
+        0 0 0 2px rgba(0,0,0,0.05),
+        inset 0 0 0 1px rgba(0,0,0,0.08),
+        inset 2px 2px 5px rgba(255,255,255,0.6),
+        inset -2px -2px 5px rgba(0,0,0,0.15),
+        0 40px 80px -20px rgba(0, 0, 0, 0.45),
+        0 25px 50px -15px rgba(0, 0, 0, 0.35),
+        0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* 3D Frame Edges - Realistic Bevel */
+/* 3D Frame Edges - PHOTOREALISTIC Bevel */
 .frame-edge {
     position: absolute;
     pointer-events: none;
@@ -3349,13 +3437,14 @@ input, textarea, select {
     top: 0;
     left: 0;
     right: 0;
-    height: 18px;
+    height: 22px;
     background: linear-gradient(180deg, 
-        rgba(255,255,255,0.5) 0%, 
-        rgba(255,255,255,0.2) 30%,
-        rgba(0,0,0,0.1) 70%,
+        rgba(255,255,255,0.65) 0%, 
+        rgba(255,255,255,0.35) 25%,
+        rgba(255,255,255,0.15) 50%,
+        rgba(0,0,0,0.08) 75%,
         rgba(0,0,0,0.2) 100%);
-    transform: rotateX(-50deg) translateZ(2px);
+    transform: rotateX(-55deg) translateZ(3px);
     transform-origin: top;
 }
 
@@ -3363,12 +3452,13 @@ input, textarea, select {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 18px;
+    height: 22px;
     background: linear-gradient(0deg, 
-        rgba(0,0,0,0.4) 0%, 
-        rgba(0,0,0,0.2) 40%,
-        rgba(255,255,255,0.1) 100%);
-    transform: rotateX(50deg) translateZ(2px);
+        rgba(0,0,0,0.5) 0%, 
+        rgba(0,0,0,0.35) 30%,
+        rgba(0,0,0,0.15) 60%,
+        rgba(255,255,255,0.08) 100%);
+    transform: rotateX(55deg) translateZ(3px);
     transform-origin: bottom;
 }
 
@@ -3376,12 +3466,13 @@ input, textarea, select {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 18px;
+    width: 22px;
     background: linear-gradient(90deg, 
-        rgba(0,0,0,0.35) 0%, 
-        rgba(0,0,0,0.15) 40%,
-        rgba(255,255,255,0.15) 100%);
-    transform: rotateY(50deg) translateZ(2px);
+        rgba(0,0,0,0.45) 0%, 
+        rgba(0,0,0,0.25) 30%,
+        rgba(0,0,0,0.1) 60%,
+        rgba(255,255,255,0.12) 100%);
+    transform: rotateY(55deg) translateZ(3px);
     transform-origin: left;
 }
 
@@ -3389,31 +3480,37 @@ input, textarea, select {
     top: 0;
     right: 0;
     bottom: 0;
-    width: 18px;
+    width: 22px;
     background: linear-gradient(-90deg, 
-        rgba(0,0,0,0.45) 0%, 
-        rgba(0,0,0,0.2) 40%,
-        rgba(255,255,255,0.1) 100%);
-    transform: rotateY(-50deg) translateZ(2px);
+        rgba(0,0,0,0.55) 0%, 
+        rgba(0,0,0,0.3) 30%,
+        rgba(0,0,0,0.12) 60%,
+        rgba(255,255,255,0.08) 100%);
+    transform: rotateY(-55deg) translateZ(3px);
     transform-origin: right;
 }
 
-/* Inner Mat/Mount - Museum Quality */
+/* Inner Mat/Mount - MUSEUM QUALITY with texture */
 .ar-frame-mat {
     position: relative;
-    padding: 12px;
-    background: linear-gradient(145deg, 
-        #faf8f5 0%, 
-        #f5f3f0 50%, 
-        #eae8e5 100%);
+    padding: 15px;
+    background: 
+        linear-gradient(145deg, 
+            #fcfaf8 0%, 
+            #f8f6f3 25%,
+            #f5f3f0 50%, 
+            #f2f0ed 75%,
+            #edeae7 100%);
     box-shadow: 
-        inset 0 0 15px rgba(0,0,0,0.12),
-        inset 0 2px 4px rgba(0,0,0,0.08),
-        inset 0 -1px 2px rgba(255,255,255,0.5);
-    border: 1px solid rgba(0,0,0,0.05);
+        inset 0 0 20px rgba(0,0,0,0.15),
+        inset 0 3px 6px rgba(0,0,0,0.1),
+        inset 0 -2px 4px rgba(255,255,255,0.6),
+        inset 3px 0 6px rgba(0,0,0,0.06),
+        inset -3px 0 6px rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.06);
 }
 
-/* Inner mat bevel effect */
+/* Inner mat bevel - 45 degree cut effect */
 .ar-frame-mat::before {
     content: '';
     position: absolute;
@@ -3421,80 +3518,99 @@ input, textarea, select {
     left: 0;
     right: 0;
     bottom: 0;
-    border: 3px solid transparent;
-    border-image: linear-gradient(145deg, 
-        rgba(0,0,0,0.1) 0%, 
-        rgba(255,255,255,0.3) 50%, 
-        rgba(0,0,0,0.15) 100%) 1;
+    border: 4px solid transparent;
+    background: linear-gradient(145deg, 
+        rgba(0,0,0,0.08) 0%, 
+        rgba(255,255,255,0.25) 40%, 
+        rgba(255,255,255,0.35) 50%,
+        rgba(0,0,0,0.12) 100%) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
     pointer-events: none;
 }
 
-/* The Artwork Image */
+/* The Artwork Image - Enhanced */
 #arFrameImage {
     width: 200px;
     height: auto;
     display: block;
     box-shadow: 
-        0 1px 3px rgba(0,0,0,0.2),
-        0 0 0 1px rgba(0,0,0,0.05);
+        0 2px 4px rgba(0,0,0,0.25),
+        0 0 0 1px rgba(0,0,0,0.08);
     pointer-events: none;
-    transition: width 0.15s ease;
+    transition: width 0.1s ease;
 }
 
-/* Glass Reflection Effect - Ultra Realistic */
+/* Glass Reflection Effect - PHOTOREALISTIC with window simulation */
 .ar-glass-reflection {
     position: absolute;
-    top: 18px;
-    left: 18px;
-    right: 18px;
-    bottom: 18px;
+    top: 22px;
+    left: 22px;
+    right: 22px;
+    bottom: 22px;
     background: 
-        /* Top-left light reflection */
-        linear-gradient(135deg,
-            rgba(255, 255, 255, 0.25) 0%,
-            rgba(255, 255, 255, 0.1) 20%,
-            transparent 40%),
-        /* Bottom-right subtle reflection */
-        linear-gradient(315deg,
-            transparent 60%,
-            rgba(255, 255, 255, 0.03) 80%,
-            rgba(255, 255, 255, 0.08) 100%),
-        /* Window reflection simulation */
+        /* Main light source reflection (top-left window) */
+        linear-gradient(130deg,
+            rgba(255, 255, 255, 0.35) 0%,
+            rgba(255, 255, 255, 0.2) 15%,
+            rgba(255, 255, 255, 0.08) 30%,
+            transparent 50%),
+        /* Secondary subtle reflection (opposite corner) */
+        linear-gradient(310deg,
+            transparent 55%,
+            rgba(255, 255, 255, 0.02) 75%,
+            rgba(255, 255, 255, 0.06) 90%,
+            rgba(255, 255, 255, 0.1) 100%),
+        /* Horizontal light band - simulates room lighting */
         linear-gradient(180deg,
-            rgba(255, 255, 255, 0.05) 0%,
-            transparent 30%,
-            transparent 70%,
-            rgba(0, 0, 0, 0.02) 100%);
+            rgba(255, 255, 255, 0.06) 0%,
+            transparent 20%,
+            transparent 80%,
+            rgba(0, 0, 0, 0.03) 100%),
+        /* Subtle overall glass sheen */
+        linear-gradient(45deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.015) 50%,
+            transparent 100%);
     pointer-events: none;
     z-index: 5;
     border-radius: 1px;
+    animation: glassShimmer 15s ease-in-out infinite;
 }
 
-/* Corner Accents */
+@keyframes glassShimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+}
+
+/* Corner Accents - Subtle elegant touch */
 .frame-corner-accent {
     position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255, 215, 0, 0.6);
+    width: 25px;
+    height: 25px;
+    border: 2px solid rgba(255, 215, 0, 0.5);
     z-index: 6;
+    opacity: 0.8;
 }
 
 .frame-corner-accent.top-left {
-    top: -3px;
-    left: -3px;
+    top: -4px;
+    left: -4px;
     border-right: none;
     border-bottom: none;
 }
 
 .frame-corner-accent.top-right {
-    top: -3px;
-    right: -3px;
+    top: -4px;
+    right: -4px;
     border-left: none;
     border-bottom: none;
 }
 
 .frame-corner-accent.bottom-left {
-    bottom: -3px;
+    bottom: -4px;
     left: -3px;
     border-right: none;
     border-top: none;
@@ -3650,29 +3766,30 @@ input, textarea, select {
 #arDepthSlider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: var(--primary-gold);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.5);
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 #arSizeSlider::-moz-range-thumb,
 #arDepthSlider::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: var(--primary-gold);
     cursor: pointer;
-    border: none;
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .ar-capture-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 20px;
+    padding: 12px 20px;
     background: rgba(255, 255, 255, 0.15);
     color: var(--white);
     border: 2px solid rgba(255, 255, 255, 0.25);
@@ -3680,13 +3797,20 @@ input, textarea, select {
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px; /* iOS touch target */
 }
 
 .ar-capture-btn:hover {
     background: var(--white);
     color: var(--primary-green-dark);
-    transform: scale(1.05);
+    transform: scale(1.03);
+}
+
+.ar-capture-btn:active {
+    transform: scale(0.96);
+    background: rgba(255, 255, 255, 0.25);
 }
 
 .ar-capture-btn i {
@@ -3697,25 +3821,53 @@ input, textarea, select {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 20px;
+    padding: 12px 20px;
     background: #25D366;
     color: var(--white);
     border-radius: 25px;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px; /* iOS touch target */
+    border: none;
 }
 
 .ar-whatsapp-btn:hover {
     background: #128C7E;
-    transform: scale(1.05);
+    transform: scale(1.03);
     box-shadow: 0 5px 20px rgba(37, 211, 102, 0.4);
+}
+
+.ar-whatsapp-btn:active {
+    transform: scale(0.96);
+    background: #1da851;
 }
 
 .ar-whatsapp-btn i {
     font-size: 1.1rem;
+}
+
+/* Frame style buttons - Touch feedback */
+.frame-style-btn {
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s ease;
+}
+
+.frame-style-btn:active {
+    transform: scale(0.9);
+}
+
+/* Resize handle - Touch feedback */
+.ar-resize-handle {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ar-resize-handle:active {
+    transform: scale(1.15);
+    background: var(--primary-gold);
 }
 
 /* AR Error State */
@@ -3727,6 +3879,7 @@ input, textarea, select {
     text-align: center;
     color: var(--white);
     padding: 40px;
+    max-width: 90%;
 }
 
 .ar-error i {
@@ -3745,75 +3898,261 @@ input, textarea, select {
     margin-bottom: 20px;
 }
 
-/* Responsive AR Styles */
+/* ============================================
+   MOBILE RESPONSIVE AR - Perfect Screen Fit
+   ============================================ */
+
+/* Tablets and smaller desktops */
 @media (max-width: 768px) {
+    .ar-modal {
+        height: 100vh;
+        height: 100dvh;
+    }
+    
     .ar-modal-header {
-        padding: 10px 15px;
+        padding: 8px 12px;
+        min-height: 45px;
     }
     
     .ar-modal-header h3 {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
     
     .ar-close-btn {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
+        width: 34px;
+        height: 34px;
+        font-size: 0.95rem;
+    }
+    
+    .ar-container {
+        flex: 1;
+        min-height: 0;
     }
     
     .ar-controls {
         flex-direction: row;
         flex-wrap: wrap;
-        padding: 12px 10px;
-        gap: 8px;
+        padding: 10px 8px;
+        gap: 6px;
     }
     
     .ar-size-control,
     .ar-depth-control {
         flex: 1;
-        min-width: 140px;
-        padding: 8px 12px;
+        min-width: 130px;
+        padding: 6px 10px;
     }
     
     .ar-size-control label,
     .ar-depth-control label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
     }
     
     #arSizeSlider,
     #arDepthSlider {
-        width: 70px;
+        width: 65px;
     }
     
     .ar-capture-btn,
     .ar-whatsapp-btn {
         flex: 1;
-        min-width: 120px;
+        min-width: 100px;
         justify-content: center;
-        padding: 10px 15px;
-        font-size: 0.85rem;
+        padding: 8px 12px;
+        font-size: 0.8rem;
     }
     
     .ar-instructions {
-        font-size: 0.7rem;
-        padding: 8px 12px;
-        bottom: 8px;
+        font-size: 0.65rem;
+        padding: 6px 10px;
+        bottom: 6px;
+        max-width: 85%;
     }
     
     .ar-frame-styles {
-        top: 10px;
-        right: 10px;
-        padding: 8px;
-        gap: 6px;
+        top: 8px;
+        right: 8px;
+        padding: 6px;
+        gap: 5px;
     }
     
     .frame-style-btn {
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
     }
     
     #arFrameImage {
-        width: 150px;
+        width: 140px;
+    }
+    
+    .ar-frame-border {
+        padding: 14px;
+    }
+    
+    .ar-frame-mat {
+        padding: 10px;
+    }
+    
+    .ar-resize-handle {
+        width: 32px;
+        height: 32px;
+        bottom: -14px;
+        right: -14px;
+        font-size: 0.75rem;
+    }
+    
+    .ar-frame-3d::before {
+        height: 25px;
+        top: -25px;
+    }
+    
+    .ar-frame-3d::after {
+        top: -32px;
+        width: 10px;
+        height: 10px;
+    }
+    
+    .ar-wall-shadow {
+        filter: blur(20px);
+    }
+    
+    .frame-edge-top, .frame-edge-bottom {
+        height: 14px;
+    }
+    
+    .frame-edge-left, .frame-edge-right {
+        width: 14px;
+    }
+}
+
+/* Mobile phones - Perfect screen fit for mobile browsers */
+@media (max-width: 480px) {
+    .ar-modal {
+        height: 100vh;
+        height: 100dvh;
+        height: -webkit-fill-available;
+        /* Safe area for notched phones */
+        padding-top: env(safe-area-inset-top, 0);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    
+    .ar-modal-header {
+        padding: 8px 12px;
+        padding-top: max(8px, env(safe-area-inset-top, 8px));
+        min-height: 44px; /* iOS minimum touch target */
+        background: linear-gradient(180deg, rgba(15, 76, 58, 0.98) 0%, rgba(15, 76, 58, 0.95) 100%);
+    }
+    
+    .ar-modal-header h3 {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .ar-modal-header h3::before {
+        display: none;
+    }
+    
+    .ar-close-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 1rem;
+        /* Larger touch target */
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .ar-container {
+        /* Account for header and controls */
+        flex: 1;
+        min-height: 0;
+    }
+    
+    .ar-controls {
+        padding: 10px 8px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom, 10px));
+        gap: 8px;
+        flex-wrap: wrap;
+        background: linear-gradient(180deg, rgba(15, 76, 58, 0.95) 0%, rgba(15, 76, 58, 0.98) 100%);
+    }
+    
+    .ar-size-control,
+    .ar-depth-control {
+        min-width: 46%;
+        flex: 1;
+        padding: 8px 10px;
+        border-radius: 20px;
+    }
+    
+    .ar-size-control label,
+    .ar-depth-control label {
+        font-size: 0.72rem;
+        gap: 4px;
+    }
+    
+    #arSizeSlider,
+    #arDepthSlider {
+        width: 60px;
+        height: 6px; /* Thicker for easier touch */
+    }
+    
+    #arSizeSlider::-webkit-slider-thumb,
+    #arDepthSlider::-webkit-slider-thumb {
+        width: 20px; /* Larger touch target */
+        height: 20px;
+    }
+    
+    .ar-capture-btn,
+    .ar-whatsapp-btn {
+        padding: 12px 14px;
+        font-size: 0.8rem;
+        gap: 6px;
+        min-width: 100px;
+        min-height: 44px; /* iOS minimum touch target */
+        border-radius: 22px;
+    }
+    
+    .ar-capture-btn i,
+    .ar-whatsapp-btn i {
+        font-size: 1rem;
+    }
+    
+    .ar-instructions {
+        font-size: 0.65rem;
+        padding: 6px 12px;
+        max-width: 90%;
+        bottom: 8px;
+        border-radius: 20px;
+    }
+    
+    .ar-frame-styles {
+        flex-direction: row;
+        top: auto;
+        bottom: 55px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        border-radius: 25px;
+        padding: 8px 12px;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.7);
+    }
+    
+    .frame-style-btn {
+        width: 32px; /* Larger touch target */
+        height: 32px;
+        border-width: 2px;
+        min-width: 44px; /* Touch-friendly */
+        min-height: 44px;
+        padding: 6px;
+    }
+    
+    .frame-style-btn span {
+        width: 20px;
+        height: 20px;
+    }
+    
+    #arFrameImage {
+        width: 130px;
     }
     
     .ar-frame-border {
@@ -3824,94 +4163,121 @@ input, textarea, select {
         padding: 8px;
     }
     
+    .ar-wall-shadow {
+        filter: blur(18px);
+        top: 22px;
+        left: 22px;
+        right: -28px;
+        bottom: -28px;
+    }
+    
     .ar-resize-handle {
-        width: 35px;
-        height: 35px;
-        bottom: -15px;
-        right: -15px;
+        width: 36px;
+        height: 36px;
+        font-size: 0.7rem;
+        bottom: -16px;
+        right: -16px;
+        /* Larger touch area */
+        min-width: 44px;
+        min-height: 44px;
     }
     
     .ar-frame-3d::before {
-        height: 20px;
-        top: -20px;
+        height: 22px;
+        top: -22px;
+    }
+    
+    .ar-frame-3d {
+        animation: none; /* Disable floating animation on mobile for performance */
+    }
+    
+    .ar-frame-3d::after {
+        top: -27px;
+        width: 8px;
+        height: 8px;
+    }
+    
+    .frame-edge-top, .frame-edge-bottom {
+        height: 10px;
+    }
+    
+    .frame-edge-left, .frame-edge-right {
+        width: 10px;
+    }
+    
+    .frame-corner-accent {
+        width: 15px;
+        height: 15px;
+    }
+    
+    .ar-error {
+        padding: 15px;
+    }
+    
+    .ar-error i {
+        font-size: 2.5rem;
+    }
+    
+    .ar-error h4 {
+        font-size: 1rem;
+    }
+    
+    .ar-error p {
+        font-size: 0.85rem;
     }
 }
 
-@media (max-width: 480px) {
-    .ar-modal-header h3 {
-        font-size: 0.85rem;
-    }
-    
-    .ar-modal-header h3::before {
-        display: none;
-    }
-    
+/* Extra small phones (360px and below) - Touch optimized */
+@media (max-width: 360px) {
     .ar-controls {
-        padding: 10px 8px;
+        padding: 8px 6px;
         gap: 6px;
     }
     
     .ar-size-control,
     .ar-depth-control {
-        min-width: 48%;
-        padding: 6px 10px;
+        min-width: 46%;
+        padding: 6px 8px;
     }
     
     .ar-size-control label,
     .ar-depth-control label {
-        font-size: 0.75rem;
-        gap: 4px;
+        font-size: 0.68rem;
     }
     
     #arSizeSlider,
     #arDepthSlider {
-        width: 60px;
-        height: 5px;
+        width: 50px;
+        height: 6px;
     }
     
     #arSizeSlider::-webkit-slider-thumb,
     #arDepthSlider::-webkit-slider-thumb {
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
     }
     
     .ar-capture-btn,
     .ar-whatsapp-btn {
-        padding: 10px 12px;
-        font-size: 0.8rem;
-        gap: 6px;
-    }
-    
-    .ar-capture-btn i,
-    .ar-whatsapp-btn i {
-        font-size: 1rem;
-    }
-    
-    .ar-instructions {
-        font-size: 0.65rem;
-        padding: 6px 10px;
-        max-width: 90%;
+        padding: 10px 10px;
+        font-size: 0.72rem;
+        min-width: 85px;
+        min-height: 40px;
     }
     
     .ar-frame-styles {
-        flex-direction: row;
-        top: auto;
-        bottom: 50px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        border-radius: 20px;
         padding: 6px 10px;
+        gap: 6px;
     }
     
     .frame-style-btn {
-        width: 28px;
-        height: 28px;
-        border-width: 2px;
+        width: 30px;
+        height: 30px;
+        padding: 5px;
     }
     
     #arFrameImage {
-        width: 120px;
+        width: 100px;
     }
     
     .ar-frame-border {
@@ -3922,69 +4288,131 @@ input, textarea, select {
         padding: 6px;
     }
     
-    .ar-wall-shadow {
-        filter: blur(15px);
-    }
-    
     .ar-resize-handle {
-        width: 32px;
-        height: 32px;
-        font-size: 0.75rem;
-    }
-    
-    .ar-error {
-        padding: 20px;
-    }
-    
-    .ar-error i {
-        font-size: 3rem;
-    }
-    
-    .ar-error h4 {
-        font-size: 1.2rem;
-    }
-    
-    .ar-error p {
-        font-size: 0.9rem;
+        width: 34px;
+        height: 34px;
     }
 }
 
-/* Landscape mode for mobile */
+/* Landscape mode - Perfect fit for horizontal mobile viewing */
 @media (max-height: 500px) and (orientation: landscape) {
+    .ar-modal {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
     .ar-modal-header {
-        padding: 8px 15px;
+        width: 100%;
+        padding: 6px 15px;
+        min-height: 38px;
     }
     
     .ar-modal-header h3 {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+    }
+    
+    .ar-close-btn {
+        width: 32px;
+        height: 32px;
+        min-width: 38px;
+        min-height: 38px;
+    }
+    
+    .ar-container {
+        flex: 1;
+        height: calc(100% - 38px - 48px);
     }
     
     .ar-controls {
+        width: 100%;
         flex-wrap: nowrap;
-        padding: 8px 15px;
+        padding: 8px 12px;
         gap: 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    
+    .ar-controls::-webkit-scrollbar {
+        display: none;
     }
     
     .ar-size-control,
     .ar-depth-control {
         min-width: auto;
         padding: 6px 12px;
+        flex-shrink: 0;
+    }
+    
+    .ar-size-control label,
+    .ar-depth-control label {
+        font-size: 0.72rem;
+    }
+    
+    #arSizeSlider,
+    #arDepthSlider {
+        width: 55px;
     }
     
     .ar-capture-btn,
     .ar-whatsapp-btn {
         min-width: auto;
-        padding: 8px 15px;
+        padding: 8px 14px;
+        flex-shrink: 0;
+        font-size: 0.78rem;
+        min-height: 38px;
     }
     
     .ar-instructions {
         bottom: 5px;
+        font-size: 0.58rem;
+        padding: 5px 10px;
     }
     
     .ar-frame-styles {
-        top: 10px;
-        right: 10px;
+        top: 50%;
+        right: 8px;
+        bottom: auto;
+        left: auto;
+        transform: translateY(-50%);
         flex-direction: column;
+        padding: 6px;
+        gap: 5px;
+    }
+    
+    .frame-style-btn {
+        width: 26px;
+        height: 26px;
+        min-width: 34px;
+        min-height: 34px;
+    }
+    
+    #arFrameImage {
+        width: 110px;
+    }
+    
+    .ar-frame-border {
+        padding: 10px;
+    }
+    
+    .ar-frame-mat {
+        padding: 6px;
+    }
+    
+    .ar-resize-handle {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .ar-frame-3d::before {
+        height: 18px;
+        top: -18px;
+    }
+    
+    .ar-frame-3d::after {
+        top: -20px;
+        width: 6px;
+        height: 6px;
     }
 }
 
